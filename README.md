@@ -85,6 +85,151 @@ make etl
 
 L'ETL est **idempotent** : relancer efface et recharge proprement la base.
 
+## Schéma SQL
+
+### Modèle en étoile
+
+```
+              dim_education
+              (id, education, education_num)
+                      │
+dim_workclass ────────┤
+(id, workclass)       │
+                 fact_person
+                 (id, age, capital_gain,
+dim_occupation ──capital_loss, hours_per_week,
+(id, occupation) income, education_id,
+                  occupation_id, country_id,
+dim_country ─────workclass_id)
+(id, native_country)
+```
+
+`fact_person` est la table centrale. Chaque ligne est un individu. Les clés étrangères (`*_id`) pointent vers les dimensions.
+
+### Explorer les tables
+
+```sql
+-- Voir la structure de la table de faits
+SELECT * FROM fact_person LIMIT 5;
+
+-- Voir les valeurs possibles d'une dimension
+SELECT * FROM dim_education ORDER BY education_num DESC;
+SELECT * FROM dim_occupation ORDER BY occupation;
+SELECT * FROM dim_workclass;
+SELECT * FROM dim_country ORDER BY native_country;
+
+-- Compter les lignes dans chaque table
+SELECT 'fact_person'   AS tbl, COUNT(*) AS n FROM fact_person
+UNION ALL
+SELECT 'dim_education',         COUNT(*) FROM dim_education
+UNION ALL
+SELECT 'dim_occupation',        COUNT(*) FROM dim_occupation
+UNION ALL
+SELECT 'dim_country',           COUNT(*) FROM dim_country
+UNION ALL
+SELECT 'dim_workclass',         COUNT(*) FROM dim_workclass;
+```
+
+### Comprendre les jointures
+
+```sql
+-- Reconstituer un profil lisible (dénormalisation)
+SELECT
+    f.age,
+    f.hours_per_week,
+    f.capital_gain,
+    f.income,
+    e.education,
+    e.education_num,
+    o.occupation,
+    w.workclass,
+    c.native_country
+FROM fact_person f
+JOIN dim_education  e ON f.education_id  = e.id
+JOIN dim_occupation o ON f.occupation_id = o.id
+JOIN dim_workclass  w ON f.workclass_id  = w.id
+JOIN dim_country    c ON f.country_id    = c.id
+LIMIT 10;
+```
+
+### Questions business et requêtes associées
+
+**Quelle est la distribution des revenus ?**
+```sql
+SELECT income, COUNT(*) AS n,
+       ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 1) AS pct
+FROM fact_person
+GROUP BY income;
+```
+
+**Quels niveaux d'éducation mènent le plus souvent à un revenu >50K ?**
+```sql
+SELECT
+    e.education,
+    e.education_num,
+    COUNT(*) FILTER (WHERE f.income = '>50K')  AS n_high,
+    COUNT(*)                                    AS n_total,
+    ROUND(COUNT(*) FILTER (WHERE f.income = '>50K') * 100.0 / COUNT(*), 1) AS pct_high
+FROM fact_person f
+JOIN dim_education e ON f.education_id = e.id
+GROUP BY e.education, e.education_num
+ORDER BY e.education_num DESC;
+```
+
+**Quels secteurs d'activité concentrent les hauts revenus ?**
+```sql
+SELECT
+    w.workclass,
+    COUNT(*) FILTER (WHERE f.income = '>50K')  AS n_high,
+    COUNT(*)                                    AS n_total,
+    ROUND(COUNT(*) FILTER (WHERE f.income = '>50K') * 100.0 / COUNT(*), 1) AS pct_high
+FROM fact_person f
+JOIN dim_workclass w ON f.workclass_id = w.id
+GROUP BY w.workclass
+ORDER BY pct_high DESC;
+```
+
+**Les heures travaillées influencent-elles le revenu ?**
+```sql
+SELECT
+    income,
+    MIN(hours_per_week)                    AS min_h,
+    MAX(hours_per_week)                    AS max_h,
+    ROUND(AVG(hours_per_week), 1)          AS avg_h,
+    ROUND(AVG(capital_gain), 0)            AS avg_capital_gain
+FROM fact_person
+GROUP BY income;
+```
+
+**Top 10 des métiers les mieux rémunérés (taux >50K) ?**
+```sql
+SELECT
+    o.occupation,
+    COUNT(*)                                                        AS n_total,
+    ROUND(COUNT(*) FILTER (WHERE f.income = '>50K') * 100.0 / COUNT(*), 1) AS pct_high
+FROM fact_person f
+JOIN dim_occupation o ON f.occupation_id = o.id
+GROUP BY o.occupation
+HAVING COUNT(*) > 100
+ORDER BY pct_high DESC
+LIMIT 10;
+```
+
+**Profil moyen par pays d'origine (top 10 pays) ?**
+```sql
+SELECT
+    c.native_country,
+    COUNT(*)                               AS n,
+    ROUND(AVG(f.age), 1)                   AS avg_age,
+    ROUND(AVG(f.hours_per_week), 1)        AS avg_hours,
+    ROUND(COUNT(*) FILTER (WHERE f.income = '>50K') * 100.0 / COUNT(*), 1) AS pct_high
+FROM fact_person f
+JOIN dim_country c ON f.country_id = c.id
+GROUP BY c.native_country
+ORDER BY n DESC
+LIMIT 10;
+```
+
 ## API
 
 | Endpoint | Description |
