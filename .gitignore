@@ -1,7 +1,11 @@
 report/
 data/
 db/*.db
+*.egg-info/
 .venv/
 __pycache__/
 *.pyc
 .env
+slides/out/
+slides/data-engineering-sql.html
+docs/
