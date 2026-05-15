@@ -69,7 +69,7 @@ wheels = [
 [[package]]
 name = "api"
 version = "0.1.0"
-source = { virtual = "src/api" }
+source = { editable = "src/api" }
 dependencies = [
     { name = "fastapi" },
     { name = "shared" },
@@ -86,7 +86,7 @@ requires-dist = [
 [[package]]
 name = "app"
 version = "0.1.0"
-source = { virtual = "src/app" }
+source = { editable = "src/app" }
 dependencies = [
     { name = "pandas" },
     { name = "requests" },
@@ -134,16 +134,24 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
+    { name = "api" },
+    { name = "app" },
+    { name = "etl" },
     { name = "httpx" },
     { name = "pytest" },
+    { name = "shared" },
 ]
 
 [package.metadata]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "api", editable = "src/api" },
+    { name = "app", editable = "src/app" },
+    { name = "etl", editable = "src/etl" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pytest", specifier = ">=8.2" },
+    { name = "shared", editable = "src/shared" },
 ]
 
 [[package]]
@@ -252,7 +260,7 @@ wheels = [
 [[package]]
 name = "etl"
 version = "0.1.0"
-source = { virtual = "src/etl" }
+source = { editable = "src/etl" }
 dependencies = [
     { name = "pandas" },
     { name = "requests" },
