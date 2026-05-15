@@ -29,14 +29,17 @@ CSV (UCI Adult) ──► ETL local ──► SQLite ──► API FastAPI ─�
 ## Démarrage rapide
 
 ```bash
-# 1. Installer les dépendances
-uv sync
+make install   # installe les dépendances
+make etl       # télécharge le dataset et charge SQLite
+make up        # lance API + Streamlit via Docker
+```
 
-# 2. Lancer le pipeline ETL (télécharge le dataset + charge SQLite)
-uv run --package etl python -m etl.main
+Autres commandes utiles :
 
-# 3. Lancer l'API + Streamlit via Docker
-docker compose up --build
+```bash
+make test      # 25 tests pytest
+make slides    # génère les slides en HTML local
+make reset     # repart de zéro (containers, DB, venv)
 ```
 
 - API : http://localhost:8000
@@ -111,11 +114,7 @@ uv run pytest tests/ -v
 
 Les slides Marp sont dans `slides/data-engineering-sql.md`. Déploiement automatique sur GitHub Pages via `.github/workflows/deploy-slides.yml` à chaque push sur `main`.
 
-Générer en local :
-
-```bash
-npx @marp-team/marp-cli slides/data-engineering-sql.md --html --allow-local-files -o slides/out/index.html
-```
+Générer en local : `make slides`
 
 ## Dataset
 
