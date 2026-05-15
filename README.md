@@ -89,19 +89,42 @@ L'ETL est **idempotent** : relancer efface et recharge proprement la base.
 
 ### Modèle en étoile
 
-```
-              dim_education
-              (id, education, education_num)
-                      │
-dim_workclass ────────┤
-(id, workclass)       │
-                 fact_person
-                 (id, age, capital_gain,
-dim_occupation ──capital_loss, hours_per_week,
-(id, occupation) income, education_id,
-                  occupation_id, country_id,
-dim_country ─────workclass_id)
-(id, native_country)
+```mermaid
+erDiagram
+    fact_person {
+        int id PK
+        int age
+        int capital_gain
+        int capital_loss
+        int hours_per_week
+        str income
+        int education_id FK
+        int occupation_id FK
+        int country_id FK
+        int workclass_id FK
+    }
+    dim_education {
+        int id PK
+        str education
+        int education_num
+    }
+    dim_occupation {
+        int id PK
+        str occupation
+    }
+    dim_country {
+        int id PK
+        str native_country
+    }
+    dim_workclass {
+        int id PK
+        str workclass
+    }
+
+    fact_person }o--|| dim_education  : education_id
+    fact_person }o--|| dim_occupation : occupation_id
+    fact_person }o--|| dim_country    : country_id
+    fact_person }o--|| dim_workclass  : workclass_id
 ```
 
 `fact_person` est la table centrale. Chaque ligne est un individu. Les clés étrangères (`*_id`) pointent vers les dimensions.
@@ -132,8 +155,19 @@ SELECT 'dim_workclass',         COUNT(*) FROM dim_workclass;
 
 ### Comprendre les jointures
 
+**Pourquoi avoir séparé les données en plusieurs tables ?** Sans dimensions, chaque ligne répéterait `"Bachelors"` ou `"Exec-managerial"` 5 000 fois. Le schéma en étoile stocke ces valeurs une seule fois et utilise un entier comme référence — c'est le principe de normalisation. La jointure reconstitue la vue complète à la lecture.
+
 ```sql
--- Reconstituer un profil lisible (dénormalisation)
+-- Première jointure : enrichir fact_person avec éducation + métier
+SELECT f.age, f.income, e.education, o.occupation
+FROM fact_person f
+JOIN dim_education  e ON f.education_id  = e.id
+JOIN dim_occupation o ON f.occupation_id = o.id
+LIMIT 10;
+```
+
+```sql
+-- Reconstituer un profil complet (toutes les dimensions)
 SELECT
     f.age,
     f.hours_per_week,
