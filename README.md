@@ -129,6 +129,15 @@ erDiagram
 
 `fact_person` est la table centrale. Chaque ligne est un individu. Les clés étrangères (`*_id`) pointent vers les dimensions.
 
+Pour obtenir la liste des tables on peut utiliser la commande :
+
+```sql
+SELECT name
+FROM sqlite_master
+WHERE type = 'table'
+ORDER BY name;
+```
+
 ### Explorer les tables
 
 ```sql

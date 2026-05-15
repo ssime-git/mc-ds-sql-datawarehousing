@@ -10,7 +10,7 @@ up:
 	docker compose up -d
 
 down:
-	docker compose down
+	docker compose down --rmi all -v
 
 test:
 	uv run pytest tests/ -v
