@@ -7,7 +7,7 @@ etl:
 	uv run --package etl python -m etl.main
 
 up:
-	docker compose up --build
+	docker compose up -d
 
 down:
 	docker compose down

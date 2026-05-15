@@ -67,7 +67,7 @@ make reset     # repart de zéro (containers, DB, venv)
 ## ETL
 
 ```bash
-uv run --package etl python -m etl.main
+make etl
 ```
 
 ```
@@ -106,7 +106,7 @@ curl -X POST http://localhost:8000/query \
 ## Tests
 
 ```bash
-uv run pytest tests/ -v
+make test
 # 25 passed
 ```
 
